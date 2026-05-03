@@ -653,6 +653,24 @@ body {
   border-top: 1px solid var(--border);
 }
 
+.import-export-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.import-label {
+  cursor: pointer;
+}
+
+.version-info {
+  margin-top: 12px;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
 .reset-section .reset-btn {
   background: none;
   border: 1px solid var(--error);

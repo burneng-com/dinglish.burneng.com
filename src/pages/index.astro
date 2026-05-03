@@ -170,7 +170,14 @@ import { vocabulary } from '../data/vocabulary';
 
   <!-- Reset -->
   <div class="reset-section">
+    <div class="import-export-row">
+      <button class="btn btn-ghost btn-sm" id="btn-export" data-i18n="btn_export">Export CSV</button>
+      <label class="btn btn-ghost btn-sm import-label" data-i18n="btn_import">Import CSV
+        <input type="file" id="btn-import" accept=".csv" hidden />
+      </label>
+    </div>
     <button class="reset-btn" id="reset-btn" data-i18n="btn_reset">Reset All Progress</button>
+    <div class="version-info" id="version-info"></div>
   </div>
 
   <!-- Confirm Modal -->
@@ -204,6 +211,7 @@ import { vocabulary } from '../data/vocabulary';
       btn_know: 'I Know This', btn_review: 'Need Review', btn_review_later: 'Review Later', btn_know_it: 'Know It',
       btn_next_q: 'Next Question', btn_new_round: 'New Round', btn_check: 'Check', btn_show: 'Show Answer', btn_next: 'Next',
       btn_cancel: 'Cancel', btn_reset: 'Reset All Progress', btn_reset_confirm: 'Reset',
+      btn_export: 'Export CSV', btn_import: 'Import CSV',
       daily_done: "Today's word completed!",
       fc_tap: 'Tap to flip',
       fb_placeholder: 'Type the word...',
@@ -228,6 +236,7 @@ import { vocabulary } from '../data/vocabulary';
       btn_know: '我會了', btn_review: '需要複習', btn_review_later: '稍後複習', btn_know_it: '我會了',
       btn_next_q: '下一題', btn_new_round: '新一輪', btn_check: '檢查', btn_show: '顯示答案', btn_next: '下一題',
       btn_cancel: '取消', btn_reset: '重置所有進度', btn_reset_confirm: '重置',
+      btn_export: '匯出 CSV', btn_import: '匯入 CSV',
       daily_done: '今日單字已完成！',
       fc_tap: '點擊翻轉',
       fb_placeholder: '輸入單字...',
@@ -545,13 +554,116 @@ import { vocabulary } from '../data/vocabulary';
     });
   }
 
+  // ── CSV Import / Export ──
+  function exportCSV() {
+    const p = load();
+    const rows = ['word,status,partOfSpeech,pronunciation,englishDefinition,chineseMeaning,exampleSentence,difficulty'];
+    vocabulary.forEach(w => {
+      let status = 'new';
+      if (p.knownWords.includes(w.word)) status = 'known';
+      else if (p.reviewWords.includes(w.word)) status = 'review';
+      const esc = s => '"' + s.replace(/"/g, '""') + '"';
+      rows.push([esc(w.word), status, esc(w.partOfSpeech), esc(w.pronunciation), esc(w.englishDefinition), esc(w.chineseMeaning), esc(w.exampleSentence), w.difficulty].join(','));
+    });
+    // Add metadata row
+    rows.push('');
+    rows.push(`# streak:${p.dailyStreak}, lastDaily:${p.lastDailyDate}, quizCorrect:${p.quizScore.correct}, quizTotal:${p.quizScore.total}, lang:${lang}`);
+
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `dinglish-progress-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importCSV(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target.result;
+      const lines = text.split('\n');
+      const knownWords = [];
+      const reviewWords = [];
+      let meta = {};
+
+      lines.forEach(line => {
+        if (line.startsWith('#')) {
+          // Parse metadata
+          const parts = line.slice(2).split(', ');
+          parts.forEach(part => {
+            const [key, val] = part.split(':');
+            if (key && val) meta[key.trim()] = val.trim();
+          });
+          return;
+        }
+        if (line.startsWith('word,')) return; // header
+        if (!line.trim()) return;
+
+        // Simple CSV parse (handles quoted fields)
+        const cols = [];
+        let current = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const ch = line[i];
+          if (ch === '"') { inQuotes = !inQuotes; continue; }
+          if (ch === ',' && !inQuotes) { cols.push(current); current = ''; continue; }
+          current += ch;
+        }
+        cols.push(current);
+
+        if (cols.length >= 2) {
+          const word = cols[0];
+          const status = cols[1];
+          if (status === 'known') knownWords.push(word);
+          else if (status === 'review') reviewWords.push(word);
+        }
+      });
+
+      const p = load();
+      // Merge imported data
+      knownWords.forEach(w => { if (!p.knownWords.includes(w)) p.knownWords.push(w); });
+      reviewWords.forEach(w => { if (!p.reviewWords.includes(w) && !p.knownWords.includes(w)) p.reviewWords.push(w); });
+      if (meta.streak) p.dailyStreak = Math.max(p.dailyStreak, parseInt(meta.streak) || 0);
+      if (meta.lastDaily) p.lastDailyDate = meta.lastDaily;
+      if (meta.quizCorrect) p.quizScore.correct = parseInt(meta.quizCorrect) || 0;
+      if (meta.quizTotal) p.quizScore.total = parseInt(meta.quizTotal) || 0;
+      if (meta.lang) { lang = meta.lang; localStorage.setItem('dinglish_lang', lang); }
+
+      save(p);
+      applyLang();
+      refreshDashboard();
+      alert(lang === 'zh' ? '匯入成功！' : 'Import successful!');
+    };
+    reader.readAsText(file);
+  }
+
   // ── Event Bindings ──
   function init() {
     applyLang();
     refreshDashboard();
 
+    // Safe event binding helper
+    function on(sel, evt, fn) {
+      const el = $(sel);
+      if (el) el.addEventListener(evt, fn);
+    }
+
+    // Version display
+    const verEl = $('#version-info');
+    if (verEl) verEl.textContent = 'Dinglish Garden';
+
+    // CSV export
+    on('#btn-export', 'click', exportCSV);
+    // CSV import
+    on('#btn-import', 'change', (e) => {
+      const file = e.target.files[0];
+      if (file) importCSV(file);
+      e.target.value = '';
+    });
+
     // Language toggle
-    $('#lang-toggle').addEventListener('click', () => {
+    on('#lang-toggle', 'click', () => {
       lang = lang === 'en' ? 'zh' : 'en';
       localStorage.setItem('dinglish_lang', lang);
       applyLang();
@@ -580,14 +692,16 @@ import { vocabulary } from '../data/vocabulary';
         p.lastDailyDate = today;
       }
       save(p);
-      $('#daily-actions').style.display = 'none';
-      $('#daily-done').style.display = 'block';
+      const da = $('#daily-actions');
+      if (da) da.style.display = 'none';
+      const dd = $('#daily-done');
+      if (dd) dd.style.display = 'block';
     }
-    $('#daily-know').addEventListener('click', () => completeDaily(true));
-    $('#daily-review').addEventListener('click', () => completeDaily(false));
+    on('#daily-know', 'click', () => completeDaily(true));
+    on('#daily-review', 'click', () => completeDaily(false));
 
     // Flashcard
-    $('#fc-card').addEventListener('click', () => $('#fc-card').classList.toggle('flipped'));
+    on('#fc-card', 'click', () => { const c = $('#fc-card'); if (c) c.classList.toggle('flipped'); });
     function nextFlashcard(known) {
       if (fcIdx < fcWords.length) {
         const w = fcWords[fcIdx];
@@ -603,36 +717,42 @@ import { vocabulary } from '../data/vocabulary';
       fcIdx++;
       showFlashcard();
     }
-    $('#fc-btn-know').addEventListener('click', () => nextFlashcard(true));
-    $('#fc-btn-review').addEventListener('click', () => nextFlashcard(false));
+    on('#fc-btn-know', 'click', () => nextFlashcard(true));
+    on('#fc-btn-review', 'click', () => nextFlashcard(false));
 
     // Quiz
-    $('#quiz-next').addEventListener('click', () => { quizLocked = false; initQuiz(); });
+    on('#quiz-next', 'click', () => { quizLocked = false; initQuiz(); });
 
     // Matching
-    $('#match-next').addEventListener('click', initMatching);
+    on('#match-next', 'click', initMatching);
 
     // Fill blank
-    $('#fb-check').addEventListener('click', checkFillBlank);
-    $('#fb-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') checkFillBlank(); });
-    $('#fb-show').addEventListener('click', () => {
+    on('#fb-check', 'click', checkFillBlank);
+    on('#fb-input', 'keydown', (e) => { if (e.key === 'Enter') checkFillBlank(); });
+    on('#fb-show', 'click', () => {
       if (fbWord) {
-        $('#fb-reveal').textContent = `${t('answer_prefix')}: ${fbWord.word} — ${fbWord.chineseMeaning}`;
-        $('#fb-input').value = fbWord.word;
-        $('#fb-input').className = 'correct';
+        const reveal = $('#fb-reveal');
+        if (reveal) reveal.textContent = `${t('answer_prefix')}: ${fbWord.word} — ${fbWord.chineseMeaning}`;
+        const input = $('#fb-input');
+        if (input) { input.value = fbWord.word; input.className = 'correct'; }
       }
     });
-    $('#fb-next').addEventListener('click', initFillBlank);
+    on('#fb-next', 'click', initFillBlank);
 
     // Reset
-    $('#reset-btn').addEventListener('click', () => $('#modal-reset').classList.add('active'));
-    $('#modal-cancel').addEventListener('click', () => $('#modal-reset').classList.remove('active'));
-    $('#modal-confirm').addEventListener('click', () => {
+    on('#reset-btn', 'click', () => { const m = $('#modal-reset'); if (m) m.classList.add('active'); });
+    on('#modal-cancel', 'click', () => { const m = $('#modal-reset'); if (m) m.classList.remove('active'); });
+    on('#modal-confirm', 'click', () => {
       localStorage.removeItem(PREFIX + 'progress');
-      $('#modal-reset').classList.remove('active');
+      const m = $('#modal-reset');
+      if (m) m.classList.remove('active');
       refreshDashboard();
     });
   }
 
-  init();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 </script>

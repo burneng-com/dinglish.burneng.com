@@ -1,13 +1,14 @@
 {
   "name": "dinglish-garden",
   "type": "module",
-  "version": "1.0.0",
+  "version": "v20260503.1",
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
     "build": "astro check && astro build",
     "preview": "astro preview",
-    "deploy": "bun run build && CLOUDFLARE_ACCOUNT_ID=abb8ec8efb3bf663e3a620ac4f1642e1 wrangler pages deploy dist --project-name=dinglish-garden",
+    "deploy": "./scripts/deploy.sh",
+    "test:e2e": "playwright test",
     "astro": "astro"
   },
   "dependencies": {
@@ -15,6 +16,8 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",
+    "@playwright/test": "^1.59.1",
+    "playwright": "^1.59.1",
     "typescript": "^5.8.3"
   }
 }
