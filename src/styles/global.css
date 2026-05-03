@@ -787,3 +787,55 @@ body {
   .dashboard { grid-template-columns: repeat(4, 1fr); }
   .mode-grid { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* ── Difficulty Stats ── */
+.difficulty-stats {
+  display: flex;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.difficulty-stat {
+  flex: 1;
+  background: var(--card);
+  border-radius: var(--radius-sm);
+  padding: 12px 6px;
+  text-align: center;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.difficulty-stat:nth-child(2) {
+  border-top-color: var(--accent);
+}
+
+.difficulty-stat:nth-child(3) {
+  border-top-color: var(--error);
+}
+
+.difficulty-stat .difficulty-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.difficulty-stat .difficulty-name {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.difficulty-stat .difficulty-count {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 480px) {
+  .difficulty-stats {
+    flex-direction: column;
+  }
+}

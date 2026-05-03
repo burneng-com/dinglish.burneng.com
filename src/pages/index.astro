@@ -167,6 +167,23 @@ const version = pkg.version;
       <span>🌱 <span data-i18n="garden_review">Review</span></span>
       <span>🟫 <span data-i18n="garden_new">New</span></span>
     </div>
+    <div class="difficulty-stats" id="difficulty-stats">
+      <div class="difficulty-stat">
+        <span class="difficulty-icon">🟢</span>
+        <span class="difficulty-name">Beginner</span>
+        <span class="difficulty-count" id="stat-beginner">0/0 words</span>
+      </div>
+      <div class="difficulty-stat">
+        <span class="difficulty-icon">🟡</span>
+        <span class="difficulty-name">Intermediate</span>
+        <span class="difficulty-count" id="stat-intermediate">0/0 words</span>
+      </div>
+      <div class="difficulty-stat">
+        <span class="difficulty-icon">🔴</span>
+        <span class="difficulty-name">Advanced</span>
+        <span class="difficulty-count" id="stat-advanced">0/0 words</span>
+      </div>
+    </div>
     <div class="garden-grid" id="garden-grid"></div>
   </section>
 
@@ -530,6 +547,15 @@ const version = pkg.version;
   // ── Garden ──
   function renderGarden() {
     const p = load();
+
+    // Update difficulty stats
+    ['beginner', 'intermediate', 'advanced'].forEach(level => {
+      const total = vocabulary.filter(w => w.difficulty === level).length;
+      const known = vocabulary.filter(w => w.difficulty === level && p.knownWords.includes(w.word)).length;
+      const el = $(`#stat-${level}`);
+      if (el) el.textContent = `${known}/${total} words`;
+    });
+
     const grid = $('#garden-grid');
     grid.textContent = '';
     vocabulary.forEach(w => {
