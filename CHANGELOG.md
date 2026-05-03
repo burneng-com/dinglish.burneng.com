@@ -2,6 +2,20 @@
 
 All notable changes to Dinglish Garden will be documented in this file.
 
+## v20260503.2 — 2026-05-03
+
+### Fixed
+- Fixed init() crash caused by null element addEventListener calls
+- Fixed E2E test strict mode violation on `[data-back]` selector
+
+### Added
+- 15 Playwright E2E tests covering all 6 learning modes
+- CSV import for restoring learning progress from backup
+- Version number display with link to changelog page
+- `/changelog` page to view version history
+- Auto-versioning deploy script (`scripts/deploy.sh`)
+- CHANGELOG.md for tracking releases
+
 ## v20260503.1 — 2026-05-03
 
 ### Added

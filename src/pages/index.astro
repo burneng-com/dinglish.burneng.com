@@ -1,6 +1,8 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { vocabulary } from '../data/vocabulary';
+import pkg from '../../package.json';
+const version = pkg.version;
 ---
 
 <Layout title="Dinglish Garden — Grow Your English">
@@ -177,7 +179,7 @@ import { vocabulary } from '../data/vocabulary';
       </label>
     </div>
     <button class="reset-btn" id="reset-btn" data-i18n="btn_reset">Reset All Progress</button>
-    <div class="version-info" id="version-info"></div>
+    <div class="version-info" id="version-info"><a href="/changelog">Dinglish Garden</a></div>
   </div>
 
   <!-- Confirm Modal -->
@@ -193,7 +195,7 @@ import { vocabulary } from '../data/vocabulary';
   </div>
 </Layout>
 
-<script define:vars={{ vocabulary }}>
+<script define:vars={{ vocabulary, version }}>
   // ── Translations ──
   const i18n = {
     en: {
@@ -651,7 +653,7 @@ import { vocabulary } from '../data/vocabulary';
 
     // Version display
     const verEl = $('#version-info');
-    if (verEl) verEl.textContent = 'Dinglish Garden';
+    if (verEl) verEl.querySelector('a').textContent = `Dinglish Garden ${version}`;
 
     // CSV export
     on('#btn-export', 'click', exportCSV);
