@@ -1,0 +1,638 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { vocabulary } from '../data/vocabulary';
+---
+
+<Layout title="Dinglish Garden — Grow Your English">
+  <!-- Header -->
+  <header class="site-header">
+    <h1>Dinglish Garden</h1>
+    <p class="tagline" data-i18n="tagline">Grow your English, one word at a time.</p>
+    <button class="lang-toggle" id="lang-toggle" aria-label="Switch language">
+      <span class="lang-label" id="lang-label">中文</span>
+    </button>
+  </header>
+
+  <!-- ═══ HOME VIEW ═══ -->
+  <section id="view-home" class="view active">
+    <div class="dashboard" id="dashboard">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-learned">0</div>
+        <div class="stat-label" data-i18n="stat_learned">Learned</div>
+      </div>
+      <div class="stat-card accent">
+        <div class="stat-value" id="stat-review">0</div>
+        <div class="stat-label" data-i18n="stat_review">To Review</div>
+      </div>
+      <div class="stat-card warning">
+        <div class="stat-value" id="stat-streak">0</div>
+        <div class="stat-label" data-i18n="stat_streak">Day Streak</div>
+      </div>
+      <div class="stat-card success">
+        <div class="stat-value" id="stat-accuracy">0%</div>
+        <div class="stat-label" data-i18n="stat_accuracy">Accuracy</div>
+      </div>
+    </div>
+
+    <div class="mode-grid" id="mode-grid">
+      <div class="mode-card" data-mode="daily">
+        <div class="mode-icon">📖</div>
+        <div class="mode-title" data-i18n="mode_daily">Daily Word</div>
+        <div class="mode-desc" data-i18n="mode_daily_desc">Today's featured word</div>
+      </div>
+      <div class="mode-card" data-mode="flashcard">
+        <div class="mode-icon">🃏</div>
+        <div class="mode-title" data-i18n="mode_flashcard">Flashcards</div>
+        <div class="mode-desc" data-i18n="mode_flashcard_desc">Tap to flip & learn</div>
+      </div>
+      <div class="mode-card" data-mode="quiz">
+        <div class="mode-icon">🎯</div>
+        <div class="mode-title" data-i18n="mode_quiz">Quiz</div>
+        <div class="mode-desc" data-i18n="mode_quiz_desc">Multiple choice</div>
+      </div>
+      <div class="mode-card" data-mode="matching">
+        <div class="mode-icon">🔗</div>
+        <div class="mode-title" data-i18n="mode_matching">Matching</div>
+        <div class="mode-desc" data-i18n="mode_matching_desc">Pair words & meanings</div>
+      </div>
+      <div class="mode-card" data-mode="fillblank">
+        <div class="mode-icon">✏️</div>
+        <div class="mode-title" data-i18n="mode_fillblank">Fill-in</div>
+        <div class="mode-desc" data-i18n="mode_fillblank_desc">Complete sentences</div>
+      </div>
+      <div class="mode-card" data-mode="garden">
+        <div class="mode-icon">🌱</div>
+        <div class="mode-title" data-i18n="mode_garden">Garden</div>
+        <div class="mode-desc" data-i18n="mode_garden_desc">Your word collection</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ DAILY WORD VIEW ═══ -->
+  <section id="view-daily" class="view">
+    <button class="back-btn" data-back data-i18n="back">← Back</button>
+    <div class="section-title">📖 <span data-i18n="title_daily">Daily Word</span></div>
+    <div class="daily-card" id="daily-card">
+      <div class="badge" id="daily-badge"></div>
+      <div class="word-main" id="daily-word"></div>
+      <div class="word-pos" id="daily-pos"></div>
+      <div class="word-pron" id="daily-pron"></div>
+      <div class="word-def" id="daily-def"></div>
+      <div class="word-zh" id="daily-zh"></div>
+      <div class="word-example" id="daily-example"></div>
+    </div>
+    <div class="btn-group" id="daily-actions">
+      <button class="btn btn-primary" id="daily-know" data-i18n="btn_know">I Know This</button>
+      <button class="btn btn-accent" id="daily-review" data-i18n="btn_review">Need Review</button>
+    </div>
+    <div id="daily-done" style="display:none; text-align:center; padding:20px;">
+      <div style="font-size:2rem;">✅</div>
+      <p style="color:var(--text-secondary); margin-top:6px;" data-i18n="daily_done">Today's word completed!</p>
+    </div>
+  </section>
+
+  <!-- ═══ FLASHCARD VIEW ═══ -->
+  <section id="view-flashcard" class="view">
+    <button class="back-btn" data-back data-i18n="back">← Back</button>
+    <div class="section-title">🃏 <span data-i18n="title_flashcard">Flashcards</span></div>
+    <div class="fc-counter" id="fc-counter">1 / 10</div>
+    <div class="flashcard-container" id="fc-container">
+      <div class="flashcard" id="fc-card">
+        <div class="flashcard-face flashcard-front">
+          <div class="fc-word" id="fc-word"></div>
+          <div class="fc-hint" data-i18n="fc_tap">Tap to flip</div>
+        </div>
+        <div class="flashcard-face flashcard-back">
+          <div class="fc-def" id="fc-def"></div>
+          <div class="fc-zh" id="fc-zh"></div>
+          <div class="fc-example" id="fc-example"></div>
+        </div>
+      </div>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-outline" id="fc-btn-review" data-i18n="btn_review_later">Review Later</button>
+      <button class="btn btn-primary" id="fc-btn-know" data-i18n="btn_know_it">Know It</button>
+    </div>
+  </section>
+
+  <!-- ═══ QUIZ VIEW ═══ -->
+  <section id="view-quiz" class="view">
+    <button class="back-btn" data-back data-i18n="back">← Back</button>
+    <div class="section-title">🎯 <span data-i18n="title_quiz">Multiple Choice</span></div>
+    <div class="quiz-score" id="quiz-score">Score: 0 / 0</div>
+    <div class="quiz-word" id="quiz-word"></div>
+    <div class="quiz-pron" id="quiz-pron"></div>
+    <div class="quiz-options" id="quiz-options"></div>
+    <div class="btn-group" id="quiz-next-wrap" style="display:none;">
+      <button class="btn btn-primary btn-block" id="quiz-next" data-i18n="btn_next_q">Next Question</button>
+    </div>
+  </section>
+
+  <!-- ═══ MATCHING VIEW ═══ -->
+  <section id="view-matching" class="view">
+    <button class="back-btn" data-back data-i18n="back">← Back</button>
+    <div class="section-title">🔗 <span data-i18n="title_matching">Word Matching</span></div>
+    <div class="matching-info" id="match-info">Match the words with their meanings!</div>
+    <div class="matching-grid" id="match-grid"></div>
+    <div class="btn-group" id="match-next-wrap" style="display:none;">
+      <button class="btn btn-primary btn-block" id="match-next" data-i18n="btn_new_round">New Round</button>
+    </div>
+  </section>
+
+  <!-- ═══ FILL BLANK VIEW ═══ -->
+  <section id="view-fillblank" class="view">
+    <button class="back-btn" data-back data-i18n="back">← Back</button>
+    <div class="section-title">✏️ <span data-i18n="title_fillblank">Fill-in-the-Blank</span></div>
+    <div class="fb-sentence" id="fb-sentence"></div>
+    <div class="fb-hint" id="fb-hint"></div>
+    <div class="fb-input-row">
+      <input type="text" id="fb-input" data-i18n-placeholder="fb_placeholder" placeholder="Type the word..." autocomplete="off" />
+      <button class="btn btn-primary btn-sm" id="fb-check" data-i18n="btn_check">Check</button>
+    </div>
+    <div class="fb-reveal" id="fb-reveal"></div>
+    <div class="btn-group">
+      <button class="btn btn-ghost btn-sm" id="fb-show" data-i18n="btn_show">Show Answer</button>
+      <button class="btn btn-primary btn-sm" id="fb-next" data-i18n="btn_next">Next</button>
+    </div>
+  </section>
+
+  <!-- ═══ GARDEN VIEW ═══ -->
+  <section id="view-garden" class="view">
+    <button class="back-btn" data-back data-i18n="back">← Back</button>
+    <div class="section-title">🌱 <span data-i18n="title_garden">Word Garden</span></div>
+    <div class="garden-legend">
+      <span>🌳 <span data-i18n="garden_known">Known</span></span>
+      <span>🌱 <span data-i18n="garden_review">Review</span></span>
+      <span>🟫 <span data-i18n="garden_new">New</span></span>
+    </div>
+    <div class="garden-grid" id="garden-grid"></div>
+  </section>
+
+  <!-- Reset -->
+  <div class="reset-section">
+    <button class="reset-btn" id="reset-btn" data-i18n="btn_reset">Reset All Progress</button>
+  </div>
+
+  <!-- Confirm Modal -->
+  <div class="modal-overlay" id="modal-reset">
+    <div class="modal-box">
+      <h3 data-i18n="reset_title">Reset Progress?</h3>
+      <p data-i18n="reset_desc">This will clear all your learning data. This cannot be undone.</p>
+      <div class="modal-actions">
+        <button class="btn btn-outline" id="modal-cancel" data-i18n="btn_cancel">Cancel</button>
+        <button class="btn btn-accent" id="modal-confirm" data-i18n="btn_reset_confirm">Reset</button>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script define:vars={{ vocabulary }}>
+  // ── Translations ──
+  const i18n = {
+    en: {
+      tagline: 'Grow your English, one word at a time.',
+      back: '← Back',
+      stat_learned: 'Learned', stat_review: 'To Review', stat_streak: 'Day Streak', stat_accuracy: 'Accuracy',
+      mode_daily: 'Daily Word', mode_daily_desc: "Today's featured word",
+      mode_flashcard: 'Flashcards', mode_flashcard_desc: 'Tap to flip & learn',
+      mode_quiz: 'Quiz', mode_quiz_desc: 'Multiple choice',
+      mode_matching: 'Matching', mode_matching_desc: 'Pair words & meanings',
+      mode_fillblank: 'Fill-in', mode_fillblank_desc: 'Complete sentences',
+      mode_garden: 'Garden', mode_garden_desc: 'Your word collection',
+      title_daily: 'Daily Word', title_flashcard: 'Flashcards', title_quiz: 'Multiple Choice',
+      title_matching: 'Word Matching', title_fillblank: 'Fill-in-the-Blank', title_garden: 'Word Garden',
+      btn_know: 'I Know This', btn_review: 'Need Review', btn_review_later: 'Review Later', btn_know_it: 'Know It',
+      btn_next_q: 'Next Question', btn_new_round: 'New Round', btn_check: 'Check', btn_show: 'Show Answer', btn_next: 'Next',
+      btn_cancel: 'Cancel', btn_reset: 'Reset All Progress', btn_reset_confirm: 'Reset',
+      daily_done: "Today's word completed!",
+      fc_tap: 'Tap to flip',
+      fb_placeholder: 'Type the word...',
+      garden_known: 'Known', garden_review: 'Review', garden_new: 'New',
+      reset_title: 'Reset Progress?', reset_desc: 'This will clear all your learning data. This cannot be undone.',
+      match_hint: 'Match the words with their meanings!', match_done: 'All matched! Great job!',
+      score_label: 'Score', hint_prefix: 'Hint', hint_starts: 'starts with',
+      answer_prefix: 'Answer',
+    },
+    zh: {
+      tagline: '每天一個字，英文自然好。',
+      back: '← 返回',
+      stat_learned: '已學會', stat_review: '待複習', stat_streak: '連續天數', stat_accuracy: '正確率',
+      mode_daily: '每日單字', mode_daily_desc: '今日精選單字',
+      mode_flashcard: '閃卡', mode_flashcard_desc: '點擊翻轉學習',
+      mode_quiz: '選擇題', mode_quiz_desc: '四選一測驗',
+      mode_matching: '配對', mode_matching_desc: '連接單字與釋義',
+      mode_fillblank: '填空', mode_fillblank_desc: '完成例句填空',
+      mode_garden: '花園', mode_garden_desc: '你的單字收藏',
+      title_daily: '每日單字', title_flashcard: '閃卡', title_quiz: '選擇題',
+      title_matching: '單字配對', title_fillblank: '填空挑戰', title_garden: '單字花園',
+      btn_know: '我會了', btn_review: '需要複習', btn_review_later: '稍後複習', btn_know_it: '我會了',
+      btn_next_q: '下一題', btn_new_round: '新一輪', btn_check: '檢查', btn_show: '顯示答案', btn_next: '下一題',
+      btn_cancel: '取消', btn_reset: '重置所有進度', btn_reset_confirm: '重置',
+      daily_done: '今日單字已完成！',
+      fc_tap: '點擊翻轉',
+      fb_placeholder: '輸入單字...',
+      garden_known: '已學會', garden_review: '複習中', garden_new: '未學習',
+      reset_title: '確定要重置進度？', reset_desc: '這將清除所有學習資料，且無法復原。',
+      match_hint: '將單字與中文釋義配對！', match_done: '全部配對成功！太棒了！',
+      score_label: '分數', hint_prefix: '提示', hint_starts: '開頭為',
+      answer_prefix: '答案',
+    },
+  };
+
+  let lang = localStorage.getItem('dinglish_lang') || 'en';
+
+  function t(key) { return i18n[lang][key] || i18n.en[key] || key; }
+
+  function applyLang() {
+    $$('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (i18n[lang][key]) el.textContent = i18n[lang][key];
+    });
+    $$('[data-i18n-placeholder]').forEach(el => {
+      const key = el.getAttribute('data-i18n-placeholder');
+      if (i18n[lang][key]) el.placeholder = i18n[lang][key];
+    });
+    $('#lang-label').textContent = lang === 'en' ? '中文' : 'EN';
+    document.documentElement.lang = lang === 'zh' ? 'zh-TW' : 'en';
+  }
+
+  // ── State ──
+  const PREFIX = 'dinglish_';
+  const DEFAULT = { knownWords: [], reviewWords: [], dailyStreak: 0, lastDailyDate: '', quizScore: { correct: 0, total: 0 } };
+
+  function load() {
+    try { const r = localStorage.getItem(PREFIX + 'progress'); return r ? { ...DEFAULT, ...JSON.parse(r) } : { ...DEFAULT }; }
+    catch { return { ...DEFAULT }; }
+  }
+  function save(data) {
+    const merged = { ...load(), ...data };
+    localStorage.setItem(PREFIX + 'progress', JSON.stringify(merged));
+  }
+
+  // ── Helpers ──
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+    return a;
+  }
+  function pick(arr, n) { return shuffle(arr).slice(0, n); }
+  function $(sel) { return document.querySelector(sel); }
+  function $$(sel) { return document.querySelectorAll(sel); }
+
+  // ── Navigation ──
+  function showView(name) {
+    $$('.view').forEach(v => v.classList.remove('active'));
+    const el = $(`#view-${name}`);
+    if (el) el.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    if (name === 'daily') initDaily();
+    if (name === 'flashcard') initFlashcard();
+    if (name === 'quiz') initQuiz();
+    if (name === 'matching') initMatching();
+    if (name === 'fillblank') initFillBlank();
+    if (name === 'garden') renderGarden();
+  }
+
+  function goHome() { showView('home'); refreshDashboard(); }
+
+  // ── Dashboard ──
+  function refreshDashboard() {
+    const p = load();
+    $('#stat-learned').textContent = p.knownWords.length;
+    $('#stat-review').textContent = p.reviewWords.length;
+    $('#stat-streak').textContent = p.dailyStreak;
+    const acc = p.quizScore.total === 0 ? 0 : Math.round((p.quizScore.correct / p.quizScore.total) * 100);
+    $('#stat-accuracy').textContent = acc + '%';
+  }
+
+  // ── Daily Word ──
+  function initDaily() {
+    const today = new Date();
+    const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+    const idx = seed % vocabulary.length;
+    const w = vocabulary[idx];
+    const p = load();
+    const todayStr = today.toISOString().slice(0, 10);
+
+    $('#daily-badge').textContent = w.difficulty;
+    $('#daily-badge').className = `badge badge-${w.difficulty}`;
+    $('#daily-word').textContent = w.word;
+    $('#daily-pos').textContent = w.partOfSpeech;
+    $('#daily-pron').textContent = w.pronunciation;
+    $('#daily-def').textContent = w.englishDefinition;
+    $('#daily-zh').textContent = w.chineseMeaning;
+    $('#daily-example').textContent = w.exampleSentence.replace('___', w.word);
+
+    if (p.lastDailyDate === todayStr) {
+      $('#daily-actions').style.display = 'none';
+      $('#daily-done').style.display = 'block';
+    } else {
+      $('#daily-actions').style.display = 'flex';
+      $('#daily-done').style.display = 'none';
+    }
+  }
+
+  // ── Flashcard ──
+  let fcWords = [];
+  let fcIdx = 0;
+
+  function initFlashcard() {
+    fcWords = shuffle(vocabulary).slice(0, 10);
+    fcIdx = 0;
+    showFlashcard();
+  }
+
+  function showFlashcard() {
+    if (fcIdx >= fcWords.length) { showView('home'); return; }
+    const w = fcWords[fcIdx];
+    $('#fc-counter').textContent = `${fcIdx + 1} / ${fcWords.length}`;
+    $('#fc-word').textContent = w.word;
+    $('#fc-def').textContent = w.englishDefinition;
+    $('#fc-zh').textContent = w.chineseMeaning;
+    $('#fc-example').textContent = w.exampleSentence.replace('___', w.word);
+    $('#fc-card').classList.remove('flipped');
+  }
+
+  // ── Quiz ──
+  let quizLocked = false;
+
+  function initQuiz() {
+    quizLocked = false;
+    const w = vocabulary[Math.floor(Math.random() * vocabulary.length)];
+    $('#quiz-word').textContent = w.word;
+    $('#quiz-pron').textContent = w.pronunciation;
+    $('#quiz-next-wrap').style.display = 'none';
+
+    const wrongs = vocabulary.filter(x => x.word !== w.word);
+    const options = pick(wrongs, 3).map(x => x.chineseMeaning);
+    options.push(w.chineseMeaning);
+    const shuffled = shuffle(options);
+
+    const container = $('#quiz-options');
+    container.textContent = '';
+    shuffled.forEach(opt => {
+      const btn = document.createElement('div');
+      btn.className = 'quiz-option';
+      btn.textContent = opt;
+      btn.addEventListener('click', () => handleQuizAnswer(btn, opt, w.chineseMeaning));
+      container.appendChild(btn);
+    });
+
+    refreshQuizScore();
+  }
+
+  function handleQuizAnswer(btn, selected, correct) {
+    if (quizLocked) return;
+    quizLocked = true;
+    const isCorrect = selected === correct;
+    const p = load();
+    p.quizScore.total += 1;
+    if (isCorrect) p.quizScore.correct += 1;
+    save(p);
+    $$('.quiz-option').forEach(o => {
+      o.classList.add('disabled');
+      if (o.textContent === correct) o.classList.add('correct');
+    });
+    if (!isCorrect) btn.classList.add('wrong');
+    refreshQuizScore();
+    $('#quiz-next-wrap').style.display = 'flex';
+  }
+
+  function refreshQuizScore() {
+    const p = load();
+    const label = t('score_label');
+    $('#quiz-score').textContent = `${label}: ${p.quizScore.correct} / ${p.quizScore.total}`;
+  }
+
+  // ── Matching ──
+  let matchSelected = null;
+  let matchCount = 0;
+  let matchTotal = 0;
+
+  function initMatching() {
+    const words = pick(vocabulary, 5);
+    matchSelected = null;
+    matchTotal = words.length;
+    matchCount = 0;
+    $('#match-next-wrap').style.display = 'none';
+    $('#match-info').textContent = t('match_hint');
+
+    const items = [];
+    words.forEach(w => {
+      items.push({ id: w.word, text: w.word, type: 'word' });
+      items.push({ id: w.word, text: w.chineseMeaning, type: 'meaning' });
+    });
+
+    const grid = $('#match-grid');
+    grid.textContent = '';
+    shuffle(items).forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'matching-card';
+      card.textContent = item.text;
+      card.dataset.id = item.id;
+      card.dataset.type = item.type;
+      card.addEventListener('click', () => handleMatchClick(card));
+      grid.appendChild(card);
+    });
+  }
+
+  function handleMatchClick(card) {
+    if (card.classList.contains('matched')) return;
+    if (!matchSelected) {
+      $$('.matching-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      matchSelected = card;
+    } else {
+      if (matchSelected === card) { card.classList.remove('selected'); matchSelected = null; return; }
+      if (matchSelected.dataset.id === card.dataset.id && matchSelected.dataset.type !== card.dataset.type) {
+        matchSelected.classList.remove('selected');
+        matchSelected.classList.add('matched');
+        card.classList.add('matched');
+        matchCount++;
+        matchSelected = null;
+        if (matchCount === matchTotal) {
+          $('#match-info').textContent = t('match_done');
+          $('#match-next-wrap').style.display = 'flex';
+        }
+      } else {
+        card.classList.add('wrong-flash');
+        matchSelected.classList.add('wrong-flash');
+        const prev = matchSelected;
+        setTimeout(() => { card.classList.remove('wrong-flash'); prev.classList.remove('wrong-flash', 'selected'); }, 500);
+        matchSelected = null;
+      }
+    }
+  }
+
+  // ── Fill in Blank ──
+  let fbWord = null;
+
+  function initFillBlank() {
+    fbWord = vocabulary[Math.floor(Math.random() * vocabulary.length)];
+    const sentence = fbWord.exampleSentence.replace(fbWord.word, '___');
+    const display = sentence.includes('___') ? sentence : fbWord.exampleSentence;
+
+    const container = $('#fb-sentence');
+    container.textContent = '';
+    const parts = display.split('___');
+    parts.forEach((part, i) => {
+      container.appendChild(document.createTextNode(part));
+      if (i < parts.length - 1) {
+        const blank = document.createElement('span');
+        blank.className = 'fb-blank';
+        blank.textContent = '    ';
+        container.appendChild(blank);
+      }
+    });
+
+    $('#fb-hint').textContent = `${t('hint_prefix')}: ${fbWord.partOfSpeech}, ${t('hint_starts')} "${fbWord.word[0]}"`;
+    $('#fb-input').value = '';
+    $('#fb-input').className = '';
+    $('#fb-reveal').textContent = '';
+    $('#fb-input').focus();
+  }
+
+  function checkFillBlank() {
+    const input = $('#fb-input').value.trim().toLowerCase();
+    if (!input) return;
+    const isCorrect = input === fbWord.word.toLowerCase();
+    const p = load();
+    p.quizScore.total += 1;
+    if (isCorrect) {
+      p.quizScore.correct += 1;
+      $('#fb-input').className = 'correct';
+      if (!p.knownWords.includes(fbWord.word)) {
+        p.knownWords.push(fbWord.word);
+        p.reviewWords = p.reviewWords.filter(w => w !== fbWord.word);
+      }
+    } else {
+      $('#fb-input').className = 'wrong';
+      $('#fb-reveal').textContent = `${t('answer_prefix')}: ${fbWord.word} — ${fbWord.chineseMeaning}`;
+      if (!p.reviewWords.includes(fbWord.word) && !p.knownWords.includes(fbWord.word)) {
+        p.reviewWords.push(fbWord.word);
+      }
+    }
+    save(p);
+  }
+
+  // ── Garden ──
+  function renderGarden() {
+    const p = load();
+    const grid = $('#garden-grid');
+    grid.textContent = '';
+    vocabulary.forEach(w => {
+      const isKnown = p.knownWords.includes(w.word);
+      const isReview = p.reviewWords.includes(w.word);
+      const plant = document.createElement('div');
+      plant.className = 'garden-plant' + (isReview ? ' review' : '');
+      let icon = '\u{1F7EB}';
+      if (isKnown) {
+        const icons = ['\u{1F333}','\u{1F332}','\u{1F334}','\u{1F33B}','\u{1F338}','\u{1F33A}','\u{1F337}','\u{1F490}','\u{1F33E}','\u{1F340}'];
+        icon = icons[w.word.charCodeAt(0) % icons.length];
+      } else if (isReview) {
+        icon = '\u{1F331}';
+      }
+      const iconEl = document.createElement('div');
+      iconEl.className = 'plant-icon';
+      iconEl.textContent = icon;
+      const wordEl = document.createElement('div');
+      wordEl.className = 'plant-word';
+      wordEl.textContent = w.word;
+      plant.appendChild(iconEl);
+      plant.appendChild(wordEl);
+      grid.appendChild(plant);
+    });
+  }
+
+  // ── Event Bindings ──
+  function init() {
+    applyLang();
+    refreshDashboard();
+
+    // Language toggle
+    $('#lang-toggle').addEventListener('click', () => {
+      lang = lang === 'en' ? 'zh' : 'en';
+      localStorage.setItem('dinglish_lang', lang);
+      applyLang();
+    });
+
+    $$('.mode-card').forEach(card => {
+      card.addEventListener('click', () => showView(card.dataset.mode));
+    });
+    $$('[data-back]').forEach(btn => btn.addEventListener('click', goHome));
+
+    // Daily word
+    function completeDaily(known) {
+      const idx = new Date().getFullYear() * 10000 + (new Date().getMonth() + 1) * 100 + new Date().getDate();
+      const w = vocabulary[idx % vocabulary.length];
+      const p = load();
+      if (known) {
+        if (!p.knownWords.includes(w.word)) p.knownWords.push(w.word);
+        p.reviewWords = p.reviewWords.filter(x => x !== w.word);
+      } else {
+        if (!p.reviewWords.includes(w.word) && !p.knownWords.includes(w.word)) p.reviewWords.push(w.word);
+      }
+      const today = new Date().toISOString().slice(0, 10);
+      const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      if (p.lastDailyDate !== today) {
+        p.dailyStreak = p.lastDailyDate === yesterday ? p.dailyStreak + 1 : 1;
+        p.lastDailyDate = today;
+      }
+      save(p);
+      $('#daily-actions').style.display = 'none';
+      $('#daily-done').style.display = 'block';
+    }
+    $('#daily-know').addEventListener('click', () => completeDaily(true));
+    $('#daily-review').addEventListener('click', () => completeDaily(false));
+
+    // Flashcard
+    $('#fc-card').addEventListener('click', () => $('#fc-card').classList.toggle('flipped'));
+    function nextFlashcard(known) {
+      if (fcIdx < fcWords.length) {
+        const w = fcWords[fcIdx];
+        const p = load();
+        if (known) {
+          if (!p.knownWords.includes(w.word)) p.knownWords.push(w.word);
+          p.reviewWords = p.reviewWords.filter(x => x !== w.word);
+        } else {
+          if (!p.reviewWords.includes(w.word) && !p.knownWords.includes(w.word)) p.reviewWords.push(w.word);
+        }
+        save(p);
+      }
+      fcIdx++;
+      showFlashcard();
+    }
+    $('#fc-btn-know').addEventListener('click', () => nextFlashcard(true));
+    $('#fc-btn-review').addEventListener('click', () => nextFlashcard(false));
+
+    // Quiz
+    $('#quiz-next').addEventListener('click', () => { quizLocked = false; initQuiz(); });
+
+    // Matching
+    $('#match-next').addEventListener('click', initMatching);
+
+    // Fill blank
+    $('#fb-check').addEventListener('click', checkFillBlank);
+    $('#fb-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') checkFillBlank(); });
+    $('#fb-show').addEventListener('click', () => {
+      if (fbWord) {
+        $('#fb-reveal').textContent = `${t('answer_prefix')}: ${fbWord.word} — ${fbWord.chineseMeaning}`;
+        $('#fb-input').value = fbWord.word;
+        $('#fb-input').className = 'correct';
+      }
+    });
+    $('#fb-next').addEventListener('click', initFillBlank);
+
+    // Reset
+    $('#reset-btn').addEventListener('click', () => $('#modal-reset').classList.add('active'));
+    $('#modal-cancel').addEventListener('click', () => $('#modal-reset').classList.remove('active'));
+    $('#modal-confirm').addEventListener('click', () => {
+      localStorage.removeItem(PREFIX + 'progress');
+      $('#modal-reset').classList.remove('active');
+      refreshDashboard();
+    });
+  }
+
+  init();
+</script>
