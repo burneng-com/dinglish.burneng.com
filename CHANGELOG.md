@@ -2,6 +2,31 @@
 
 All notable changes to Dinglish Garden will be documented in this file.
 
+## v20260510.1 — 2026-05-10
+
+### Added
+- `/admin` page to add, delete, export, and import custom vocabulary words
+- Source selector on homepage: Built-in / My Words / All
+- All 6 learning modes support custom word source
+- CSV export/import for custom words (separate from progress backup)
+- "Manage My Words" link on homepage to /admin
+- i18n support (EN/ZH) for all new UI elements
+
+### Fixed
+- Empty source guard added to Flashcard mode (mini-cc review)
+- Source selection whitelist validation for localStorage value
+
+## v20260503.4 — 2026-05-03
+
+### Added
+- Difficulty stats (beginner/intermediate/advanced) in Garden view
+
+## v20260503.3 — 2026-05-03
+
+### Added
+- `/changelog` page rendering CHANGELOG.md
+- Version number displayed in footer with link to changelog
+
 ## v20260503.2 — 2026-05-03
 
 ### Fixed
