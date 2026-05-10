@@ -1,7 +1,7 @@
 {
   "name": "dinglish-garden",
   "type": "module",
-  "version": "v20260503.4",
+  "version": "v20260510.1",
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
