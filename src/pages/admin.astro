@@ -1,0 +1,392 @@
+---
+import Layout from '../layouts/Layout.astro';
+import pkg from '../../package.json';
+const version = pkg.version;
+---
+
+<Layout title="My Words 管理員 — Dinglish Garden">
+  <section class="admin-page">
+    <a href="/" class="back-link" data-i18n="back">← Back to Garden</a>
+    <h1 data-i18n="admin_title">My Words 管理員</h1>
+    <p class="admin-desc" data-i18n="admin_desc">Add, manage, export, and import your own custom vocabulary.</p>
+
+    <!-- Add Word Form -->
+    <form class="admin-form" id="add-word-form" autocomplete="off">
+      <label class="full-width">
+        <span data-i18n="form_word">Word *</span>
+        <input type="text" id="f-word" required placeholder="e.g. serendipity" />
+      </label>
+      <label>
+        <span data-i18n="form_pos">Part of Speech</span>
+        <select id="f-pos">
+          <option value="noun">noun</option>
+          <option value="verb">verb</option>
+          <option value="adjective">adjective</option>
+          <option value="adverb">adverb</option>
+          <option value="preposition">preposition</option>
+          <option value="conjunction">conjunction</option>
+          <option value="interjection">interjection</option>
+        </select>
+      </label>
+      <label>
+        <span data-i18n="form_difficulty">Difficulty</span>
+        <select id="f-difficulty">
+          <option value="beginner">beginner</option>
+          <option value="intermediate" selected>intermediate</option>
+          <option value="advanced">advanced</option>
+        </select>
+      </label>
+      <label class="full-width">
+        <span data-i18n="form_pron">Pronunciation</span>
+        <input type="text" id="f-pron" placeholder="/ˈeksampəl/" />
+      </label>
+      <label class="full-width">
+        <span data-i18n="form_endef">English Definition</span>
+        <input type="text" id="f-endef" placeholder="A short definition" />
+      </label>
+      <label class="full-width">
+        <span data-i18n="form_zh">Chinese Meaning *</span>
+        <input type="text" id="f-zh" required placeholder="中文意思" />
+      </label>
+      <label class="full-width">
+        <span data-i18n="form_example">Example Sentence (use ___ for blank)</span>
+        <input type="text" id="f-example" placeholder="This is an ___ sentence." />
+      </label>
+      <label class="full-width">
+        <span data-i18n="form_tags">Tags (comma-separated)</span>
+        <input type="text" id="f-tags" placeholder="motivation, life" />
+      </label>
+      <button type="submit" class="btn-submit" data-i18n="form_submit">Add Word</button>
+    </form>
+
+    <!-- Custom word list -->
+    <h2 class="admin-section-title" data-i18n="my_words_title">My Words</h2>
+    <div id="custom-word-list"></div>
+
+    <!-- Export / Import -->
+    <div class="admin-actions">
+      <button class="btn btn-ghost btn-sm" id="btn-export-custom" data-i18n="btn_export_custom">Export My Words</button>
+      <label class="btn btn-ghost btn-sm import-label">
+        <span data-i18n="btn_import_custom">Import My Words</span>
+        <input type="file" id="btn-import-custom" accept=".csv" hidden />
+      </label>
+    </div>
+
+    <div class="version-info" id="version-info"><a href="/changelog">Dinglish Garden</a></div>
+  </section>
+</Layout>
+
+<script define:vars={{ version }}>
+  // ── Translations ──
+  const i18n = {
+    en: {
+      back: '← Back to Garden',
+      admin_title: 'My Words Manager',
+      admin_desc: 'Add, manage, export, and import your own custom vocabulary.',
+      form_word: 'Word *',
+      form_pos: 'Part of Speech',
+      form_difficulty: 'Difficulty',
+      form_pron: 'Pronunciation',
+      form_endef: 'English Definition',
+      form_zh: 'Chinese Meaning *',
+      form_example: 'Example Sentence (use ___ for blank)',
+      form_tags: 'Tags (comma-separated)',
+      form_submit: 'Add Word',
+      my_words_title: 'My Words',
+      btn_export_custom: 'Export My Words',
+      btn_import_custom: 'Import My Words',
+      empty_list: 'No custom words yet. Add some above!',
+      delete_confirm: 'Delete this word?',
+      duplicate_msg: 'This word already exists.',
+      required_msg: 'Word and Chinese meaning are required.',
+      import_success: 'Import successful!',
+      import_failed: 'Import failed: ',
+    },
+    zh: {
+      back: '← 返回花園',
+      admin_title: 'My Words 管理員',
+      admin_desc: '新增、管理、匯出、匯入你的自訂單字。',
+      form_word: '單字 *',
+      form_pos: '詞性',
+      form_difficulty: '難度',
+      form_pron: '音標',
+      form_endef: '英文釋義',
+      form_zh: '中文意思 *',
+      form_example: '例句（用 ___ 代表空格）',
+      form_tags: '標籤（逗號分隔）',
+      form_submit: '新增單字',
+      my_words_title: '我的單字',
+      btn_export_custom: '匯出我的單字',
+      btn_import_custom: '匯入我的單字',
+      empty_list: '尚未新增自訂單字',
+      delete_confirm: '確定要刪除此單字？',
+      duplicate_msg: '此單字已存在。',
+      required_msg: '單字和中文意思為必填。',
+      import_success: '匯入成功！',
+      import_failed: '匯入失敗：',
+    },
+  };
+
+  let lang = localStorage.getItem('dinglish_lang') || 'en';
+  function t(key) { return i18n[lang][key] || i18n.en[key] || key; }
+  function $(sel) { return document.querySelector(sel); }
+  function $$(sel) { return document.querySelectorAll(sel); }
+
+  function applyLang() {
+    $$('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (i18n[lang][key]) el.textContent = i18n[lang][key];
+    });
+    document.documentElement.lang = lang === 'zh' ? 'zh-TW' : 'en';
+  }
+
+  // ── Storage ──
+  const STORAGE_KEY = 'dinglish_custom_words';
+
+  function loadCustomWords() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveCustomWords(words) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(words));
+  }
+
+  function addWord(wordObj) {
+    const words = loadCustomWords();
+    if (words.some(w => w.word.toLowerCase() === wordObj.word.toLowerCase())) {
+      alert(t('duplicate_msg'));
+      return false;
+    }
+    words.push(wordObj);
+    saveCustomWords(words);
+    return true;
+  }
+
+  function deleteWord(word) {
+    const words = loadCustomWords().filter(w => w.word !== word);
+    saveCustomWords(words);
+  }
+
+  // ── Render ──
+  function renderWordList() {
+    const container = $('#custom-word-list');
+    if (!container) return;
+    container.textContent = '';
+    const words = loadCustomWords();
+    if (words.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'word-list-empty';
+      empty.textContent = t('empty_list');
+      container.appendChild(empty);
+      return;
+    }
+    words.forEach(w => {
+      const item = document.createElement('div');
+      item.className = 'word-list-item';
+
+      const info = document.createElement('div');
+      info.className = 'word-info';
+
+      const wordEl = document.createElement('span');
+      wordEl.className = 'word-text';
+      wordEl.textContent = w.word;
+
+      const meaningEl = document.createElement('span');
+      meaningEl.className = 'word-meaning';
+      meaningEl.textContent = w.chineseMeaning;
+
+      info.appendChild(wordEl);
+      info.appendChild(meaningEl);
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn-delete';
+      delBtn.type = 'button';
+      delBtn.setAttribute('aria-label', 'Delete');
+      delBtn.textContent = '✕';
+      delBtn.addEventListener('click', () => {
+        if (confirm(t('delete_confirm'))) {
+          deleteWord(w.word);
+          renderWordList();
+        }
+      });
+
+      item.appendChild(info);
+      item.appendChild(delBtn);
+      container.appendChild(item);
+    });
+  }
+
+  // ── CSV Import / Export ──
+  function csvEsc(s) {
+    return '"' + String(s == null ? '' : s).replace(/"/g, '""') + '"';
+  }
+
+  function exportCustomCSV() {
+    const words = loadCustomWords();
+    const rows = ['word,status,partOfSpeech,pronunciation,englishDefinition,chineseMeaning,exampleSentence,difficulty,tags'];
+    words.forEach(w => {
+      const tagsStr = Array.isArray(w.tags) ? w.tags.join('|') : '';
+      rows.push([
+        csvEsc(w.word),
+        'custom',
+        csvEsc(w.partOfSpeech || ''),
+        csvEsc(w.pronunciation || ''),
+        csvEsc(w.englishDefinition || ''),
+        csvEsc(w.chineseMeaning || ''),
+        csvEsc(w.exampleSentence || ''),
+        w.difficulty || 'intermediate',
+        csvEsc(tagsStr),
+      ].join(','));
+    });
+    rows.push('');
+    rows.push(`# custom-words export, count:${words.length}`);
+
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `dinglish-custom-words-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function parseCSVLine(line) {
+    const cols = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQuotes && line[i + 1] === '"') { current += '"'; i++; continue; }
+        inQuotes = !inQuotes;
+        continue;
+      }
+      if (ch === ',' && !inQuotes) { cols.push(current); current = ''; continue; }
+      current += ch;
+    }
+    cols.push(current);
+    return cols;
+  }
+
+  function importCustomCSV(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target.result;
+        const lines = text.split(/\r?\n/);
+        const existing = loadCustomWords();
+        const existingSet = new Set(existing.map(w => w.word.toLowerCase()));
+        let added = 0;
+
+        lines.forEach(line => {
+          if (!line || !line.trim()) return;
+          if (line.startsWith('#')) return;
+          if (line.startsWith('word,')) return; // header
+
+          const cols = parseCSVLine(line);
+          if (cols.length < 2) return;
+          const word = (cols[0] || '').trim();
+          if (!word) return;
+          if (existingSet.has(word.toLowerCase())) return;
+
+          const difficulty = (cols[7] || 'intermediate').trim();
+          const validDifficulty = ['beginner', 'intermediate', 'advanced'].includes(difficulty) ? difficulty : 'intermediate';
+          const tagsRaw = (cols[8] || '').trim();
+          const tags = tagsRaw ? tagsRaw.split('|').map(s => s.trim()).filter(Boolean) : [];
+
+          const obj = {
+            word,
+            partOfSpeech: (cols[2] || '').trim(),
+            pronunciation: (cols[3] || '').trim(),
+            englishDefinition: (cols[4] || '').trim(),
+            chineseMeaning: (cols[5] || '').trim(),
+            exampleSentence: (cols[6] || '').trim(),
+            difficulty: validDifficulty,
+            tags,
+          };
+          existing.push(obj);
+          existingSet.add(word.toLowerCase());
+          added++;
+        });
+
+        saveCustomWords(existing);
+        renderWordList();
+        alert(t('import_success') + ' (+' + added + ')');
+      } catch (err) {
+        alert(t('import_failed') + (err && err.message ? err.message : 'unknown'));
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // ── Init ──
+  function init() {
+    applyLang();
+    renderWordList();
+
+    const verEl = $('#version-info');
+    if (verEl) {
+      const verLink = verEl.querySelector('a');
+      if (verLink) verLink.textContent = `Dinglish Garden ${version}`;
+    }
+
+    const form = $('#add-word-form');
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const word = ($('#f-word')?.value || '').trim();
+        const zh = ($('#f-zh')?.value || '').trim();
+        if (!word || !zh) {
+          alert(t('required_msg'));
+          return;
+        }
+        const tagsRaw = ($('#f-tags')?.value || '').trim();
+        const tags = tagsRaw ? tagsRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+
+        const obj = {
+          word,
+          partOfSpeech: ($('#f-pos')?.value || 'noun').trim(),
+          pronunciation: ($('#f-pron')?.value || '').trim(),
+          englishDefinition: ($('#f-endef')?.value || '').trim(),
+          chineseMeaning: zh,
+          exampleSentence: ($('#f-example')?.value || '').trim(),
+          difficulty: ($('#f-difficulty')?.value || 'intermediate'),
+          tags,
+        };
+
+        if (addWord(obj)) {
+          form.reset();
+          const sel = $('#f-difficulty');
+          if (sel) sel.value = 'intermediate';
+          renderWordList();
+          const wordInput = $('#f-word');
+          if (wordInput) wordInput.focus();
+        }
+      });
+    }
+
+    const exportBtn = $('#btn-export-custom');
+    if (exportBtn) exportBtn.addEventListener('click', exportCustomCSV);
+
+    const importInput = $('#btn-import-custom');
+    if (importInput) {
+      importInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) importCustomCSV(file);
+        e.target.value = '';
+      });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+</script>

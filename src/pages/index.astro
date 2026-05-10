@@ -36,6 +36,13 @@ const version = pkg.version;
       </div>
     </div>
 
+    <div class="source-selector" id="source-selector">
+      <span class="source-label" data-i18n="source_label">Word Source:</span>
+      <button class="source-btn active" data-source="builtin" data-i18n="source_builtin">Built-in</button>
+      <button class="source-btn" data-source="custom" data-i18n="source_custom">My Words</button>
+      <button class="source-btn" data-source="all" data-i18n="source_all">All</button>
+    </div>
+
     <div class="mode-grid" id="mode-grid">
       <div class="mode-card" data-mode="daily">
         <div class="mode-icon">📖</div>
@@ -195,6 +202,9 @@ const version = pkg.version;
         <input type="file" id="btn-import" accept=".csv" hidden />
       </label>
     </div>
+    <div class="admin-link-row">
+      <a href="/admin" class="btn btn-ghost btn-sm" data-i18n="btn_admin">Manage My Words</a>
+    </div>
     <button class="reset-btn" id="reset-btn" data-i18n="btn_reset">Reset All Progress</button>
     <div class="version-info" id="version-info"><a href="/changelog">Dinglish Garden</a></div>
   </div>
@@ -231,6 +241,8 @@ const version = pkg.version;
       btn_next_q: 'Next Question', btn_new_round: 'New Round', btn_check: 'Check', btn_show: 'Show Answer', btn_next: 'Next',
       btn_cancel: 'Cancel', btn_reset: 'Reset All Progress', btn_reset_confirm: 'Reset',
       btn_export: 'Export CSV', btn_import: 'Import CSV',
+      btn_admin: 'Manage My Words',
+      source_label: 'Word Source:', source_builtin: 'Built-in', source_custom: 'My Words', source_all: 'All',
       daily_done: "Today's word completed!",
       fc_tap: 'Tap to flip',
       fb_placeholder: 'Type the word...',
@@ -256,6 +268,8 @@ const version = pkg.version;
       btn_next_q: '下一題', btn_new_round: '新一輪', btn_check: '檢查', btn_show: '顯示答案', btn_next: '下一題',
       btn_cancel: '取消', btn_reset: '重置所有進度', btn_reset_confirm: '重置',
       btn_export: '匯出 CSV', btn_import: '匯入 CSV',
+      btn_admin: '管理我的單字',
+      source_label: '單字來源：', source_builtin: '內建', source_custom: '我的單字', source_all: '全部',
       daily_done: '今日單字已完成！',
       fc_tap: '點擊翻轉',
       fb_placeholder: '輸入單字...',
@@ -268,6 +282,26 @@ const version = pkg.version;
   };
 
   let lang = localStorage.getItem('dinglish_lang') || 'en';
+
+  // ── Custom Words / Source ──
+  function loadCustomWords() {
+    try {
+      const raw = localStorage.getItem('dinglish_custom_words');
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch {
+      return [];
+    }
+  }
+
+  let wordSource = localStorage.getItem('dinglish_word_source') || 'builtin';
+
+  function getWordSource() {
+    const custom = loadCustomWords();
+    if (wordSource === 'custom') return custom.length > 0 ? custom : vocabulary;
+    if (wordSource === 'all') return [...vocabulary, ...custom];
+    return vocabulary;
+  }
 
   function t(key) { return i18n[lang][key] || i18n.en[key] || key; }
 
@@ -338,8 +372,10 @@ const version = pkg.version;
   function initDaily() {
     const today = new Date();
     const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
-    const idx = seed % vocabulary.length;
-    const w = vocabulary[idx];
+    const source = getWordSource();
+    if (!source.length) return;
+    const idx = seed % source.length;
+    const w = source[idx];
     const p = load();
     const todayStr = today.toISOString().slice(0, 10);
 
@@ -366,7 +402,9 @@ const version = pkg.version;
   let fcIdx = 0;
 
   function initFlashcard() {
-    fcWords = shuffle(vocabulary).slice(0, 10);
+    const source = getWordSource();
+    if (!source || !source.length) return;
+    fcWords = shuffle(source).slice(0, 10);
     fcIdx = 0;
     showFlashcard();
   }
@@ -387,12 +425,14 @@ const version = pkg.version;
 
   function initQuiz() {
     quizLocked = false;
-    const w = vocabulary[Math.floor(Math.random() * vocabulary.length)];
+    const source = getWordSource();
+    if (!source.length) return;
+    const w = source[Math.floor(Math.random() * source.length)];
     $('#quiz-word').textContent = w.word;
     $('#quiz-pron').textContent = w.pronunciation;
     $('#quiz-next-wrap').style.display = 'none';
 
-    const wrongs = vocabulary.filter(x => x.word !== w.word);
+    const wrongs = source.filter(x => x.word !== w.word);
     const options = pick(wrongs, 3).map(x => x.chineseMeaning);
     options.push(w.chineseMeaning);
     const shuffled = shuffle(options);
@@ -439,7 +479,9 @@ const version = pkg.version;
   let matchTotal = 0;
 
   function initMatching() {
-    const words = pick(vocabulary, 5);
+    const source = getWordSource();
+    if (!source.length) return;
+    const words = pick(source, Math.min(5, source.length));
     matchSelected = null;
     matchTotal = words.length;
     matchCount = 0;
@@ -497,7 +539,9 @@ const version = pkg.version;
   let fbWord = null;
 
   function initFillBlank() {
-    fbWord = vocabulary[Math.floor(Math.random() * vocabulary.length)];
+    const source = getWordSource();
+    if (!source.length) return;
+    fbWord = source[Math.floor(Math.random() * source.length)];
     const sentence = fbWord.exampleSentence.replace(fbWord.word, '___');
     const display = sentence.includes('___') ? sentence : fbWord.exampleSentence;
 
@@ -547,18 +591,19 @@ const version = pkg.version;
   // ── Garden ──
   function renderGarden() {
     const p = load();
+    const source = getWordSource();
 
     // Update difficulty stats
     ['beginner', 'intermediate', 'advanced'].forEach(level => {
-      const total = vocabulary.filter(w => w.difficulty === level).length;
-      const known = vocabulary.filter(w => w.difficulty === level && p.knownWords.includes(w.word)).length;
+      const total = source.filter(w => w.difficulty === level).length;
+      const known = source.filter(w => w.difficulty === level && p.knownWords.includes(w.word)).length;
       const el = $(`#stat-${level}`);
       if (el) el.textContent = `${known}/${total} words`;
     });
 
     const grid = $('#garden-grid');
     grid.textContent = '';
-    vocabulary.forEach(w => {
+    source.forEach(w => {
       const isKnown = p.knownWords.includes(w.word);
       const isReview = p.reviewWords.includes(w.word);
       const plant = document.createElement('div');
@@ -702,10 +747,31 @@ const version = pkg.version;
     });
     $$('[data-back]').forEach(btn => btn.addEventListener('click', goHome));
 
+    // Source selector
+    $$('.source-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        $$('.source-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        wordSource = btn.dataset.source;
+        localStorage.setItem('dinglish_word_source', wordSource);
+      });
+    });
+    // Restore saved source selection
+    const savedSource = localStorage.getItem('dinglish_word_source');
+    const validSources = ['builtin', 'custom', 'all'];
+    if (savedSource && validSources.includes(savedSource)) {
+      wordSource = savedSource;
+      $$('.source-btn').forEach(b => b.classList.remove('active'));
+      const activeBtn = $(`.source-btn[data-source="${savedSource}"]`);
+      if (activeBtn) activeBtn.classList.add('active');
+    }
+
     // Daily word
     function completeDaily(known) {
       const idx = new Date().getFullYear() * 10000 + (new Date().getMonth() + 1) * 100 + new Date().getDate();
-      const w = vocabulary[idx % vocabulary.length];
+      const source = getWordSource();
+      if (!source.length) return;
+      const w = source[idx % source.length];
       const p = load();
       if (known) {
         if (!p.knownWords.includes(w.word)) p.knownWords.push(w.word);
